@@ -97,7 +97,6 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ steps.extract_version.outputs.version }}
             ${{ secrets.DOCKERHUB_USERNAME }}/adguardhome-lancache-dns:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/adguardhome-lancache-dns:${{ steps.extract_version.outputs.version }}
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
           provenance: false
@@ -172,7 +171,6 @@ jobs:
             **Docker Hub:**
 
             ```bash
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/adguardhome-lancache-dns:${{ steps.extract_version.outputs.version }}
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/adguardhome-lancache-dns:latest
             ```
 
