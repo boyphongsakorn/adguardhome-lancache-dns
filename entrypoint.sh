@@ -57,3 +57,6 @@ echo ""
 
 # Keep container running and tail logs
 tail -f /var/log/cron.log
+
+# make UpdateAdGuardDNSRewrites.py run when starting the container
+/venv/bin/python /app/UpdateAdGuardDNSRewrites.py
