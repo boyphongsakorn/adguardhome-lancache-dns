@@ -2,6 +2,8 @@ name: Publish Docker image and Create Release
 
 on:
   push:
+    branches:
+    - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -129,7 +131,7 @@ jobs:
             --output /output/trivy-full-report.json \
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
             --scanners vuln \
-            "ghcr.io/${{ github.repository }}:${{ steps.extract_version.outputs.version }}"
+            "ghcr.io/${{ github.repository }}:latest"
 
           echo "Trivy report generated successfully"
           ls -lah reports/
