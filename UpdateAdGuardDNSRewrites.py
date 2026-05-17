@@ -236,6 +236,37 @@ def fetch_current_rewrites(session: requests.Session, rewrite_endpoint: str) -> 
     rewrites = response.json()
     return {rewrite['domain']: rewrite['answer'] for rewrite in rewrites}
 
+def batch_delete_rewrites(session: requests.Session, rewrite_endpoint: str, current_rewrites: Dict[str, str],
+                          batch_size: int = BATCH_SIZE):
+    """Deletes all existing DNS rewrites in batches before applying the new list.
+
+    Parameters:
+    session (requests.Session): The session to use for HTTP requests.
+    rewrite_endpoint (str): The endpoint URL for DNS rewrites.
+    current_rewrites (Dict[str, str]): A dictionary of current DNS rewrites to delete.
+    batch_size (int): Number of rewrites to delete before logging progress.
+    """
+    deleted_count = 0
+    failed_count = 0
+    rewrites_list = list(current_rewrites.items())
+    logging.info("Deleting %d existing DNS rewrites before applying new list...", len(rewrites_list))
+    for i, (domain, answer) in enumerate(rewrites_list):
+        logging.debug(f"Deleting DNS rewrite for {domain}.")
+        try:
+            session.post(
+                f"{rewrite_endpoint}/delete",
+                json={"domain": domain, "answer": answer, "enabled": True},
+                timeout=10
+            )
+            deleted_count += 1
+        except Exception as e:
+            logging.error(f"Failed to delete {domain}: {e}")
+            failed_count += 1
+        if (i + 1) % batch_size == 0:
+            logging.info(f"Delete progress: {i + 1}/{len(rewrites_list)} processed. "
+                         f"Deleted: {deleted_count}, Failed: {failed_count}")
+    logging.info(f"DNS rewrite deletion complete. Deleted: {deleted_count}, Failed: {failed_count}")
+
 def batch_update_rewrites(session: requests.Session, rewrite_endpoint: str, dns_rewrites: List[Dict[str, str]],
                           current_rewrites: Dict[str, str], batch_size: int = BATCH_SIZE):
     """Updates DNS rewrites in batches to avoid overwhelming the server.
@@ -276,7 +307,7 @@ def batch_update_rewrites(session: requests.Session, rewrite_endpoint: str, dns_
 
 @exception_handler
 def update_dns_rewrites(session: requests.Session, rewrite_endpoint: str, dns_rewrites: List[Dict[str, str]]):
-    """Manages DNS rewrites by ensuring each is only added once and updates are handled correctly.
+    """Manages DNS rewrites by first removing all existing entries, then adding the new list.
 
     Parameters:
     session (requests.Session): The session to use for the HTTP requests.
@@ -284,8 +315,12 @@ def update_dns_rewrites(session: requests.Session, rewrite_endpoint: str, dns_re
     dns_rewrites (List[Dict[str, str]]): The desired list of DNS rewrite rules.
     """
     current_rewrites = fetch_current_rewrites(session, rewrite_endpoint)
-    logging.info("Updating DNS rewrites.")
-    batch_update_rewrites(session, rewrite_endpoint, dns_rewrites, current_rewrites)
+    if current_rewrites:
+        batch_delete_rewrites(session, rewrite_endpoint, current_rewrites)
+    else:
+        logging.info("No existing DNS rewrites found, skipping deletion step.")
+    logging.info("Adding new DNS rewrites.")
+    batch_update_rewrites(session, rewrite_endpoint, dns_rewrites, current_rewrites={})
 
 def load_cache(cache_file: str) -> Optional[Dict[str, List[Dict[str, str]]]]:
     """Loads cached DNS rewrites from file if it exists.
