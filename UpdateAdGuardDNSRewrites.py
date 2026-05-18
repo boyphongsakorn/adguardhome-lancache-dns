@@ -14,7 +14,7 @@ from urllib3.util.retry import Retry
 from urllib.parse import urljoin
 from functools import wraps
 
-JSON_URL = "https://raw.githubusercontent.com/boyphongsakorn/cache-domains-with-linux/refs/heads/master/cache_domains.json"
+JSON_URL = os.getenv('JSON_URL', "https://raw.githubusercontent.com/boyphongsakorn/cache-domains-with-linux/refs/heads/master/cache_domains.json")
 LOG_FORMAT = '%(asctime)s\t%(levelname)s\t%(message)s'
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 MAX_WORKERS = int(os.getenv('MAX_WORKERS', '3'))
